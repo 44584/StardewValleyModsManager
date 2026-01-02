@@ -1,3 +1,4 @@
+mod mods_manager;
 use std::process::Command;
 
 fn main() {
