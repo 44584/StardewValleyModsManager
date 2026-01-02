@@ -15,7 +15,7 @@ struct ModScanner {
 }
 
 impl ModScanner {
-    ///使用默认的模组目录
+    /// 使用默认的模组目录
     pub fn default() -> Self {
         ModScanner {
             mods_folder_path: PathBuf::from(
@@ -24,8 +24,23 @@ impl ModScanner {
         }
     }
 
+    /// 根据提供的星露谷模组路径构造
+    ///
+    /// # 参数
+    /// - `sv_mods_path`: 包含所有模组的最低一级目录
+    pub fn from(sv_mods_path: &str) -> Self {
+        ModScanner {
+            mods_folder_path: PathBuf::from(sv_mods_path),
+        }
+    }
+
     ///从单个模组的manifest.json文件中获取目标信息
-    /// mod_name是单个模组文件夹名, 在本函数中拼接
+    ///
+    /// # 参数
+    /// - `mod_name`: 单个模组文件夹名, 会在本函数中拼接形成路径
+    ///
+    /// # 返回值
+    /// Result<Option<ManifestInfo>, String>, Option中Some是ManifestInfo
     fn scan_single_mod(&self, mod_name: &str) -> Result<Option<ManifestInfo>, String> {
         let manifest_path = self
             .mods_folder_path
