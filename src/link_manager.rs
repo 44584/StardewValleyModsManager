@@ -42,6 +42,25 @@ pub fn create_links(
     Ok(())
 }
 
+/// use it carefully
+pub fn remove_profile(mods_folder_path: &PathBuf, profile_name: &str) -> Result<(), String> {
+    match std::fs::remove_dir_all(mods_folder_path.join(profile_name)) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+pub fn remove_mod_from_profile(
+    mods_folder_path: &PathBuf,
+    profile_name: &str,
+    mod_name: &str,
+) -> Result<(), String> {
+    match std::fs::remove_dir_all(mods_folder_path.join(profile_name).join(mod_name)) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,5 +100,13 @@ mod tests {
             let link_path = mods_folder_path.join(format!("{}/{}", profile_name, mod_name));
             assert!(link_path.is_dir());
         }
+    }
+
+    #[test]
+    fn test_remove_profile() {
+        let profile_name = "test_profile";
+        let mods_path =
+            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods");
+        let _ = remove_profile(&mods_path, profile_name);
     }
 }
