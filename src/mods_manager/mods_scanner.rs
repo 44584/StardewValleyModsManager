@@ -41,7 +41,7 @@ impl ModScanner {
     }
 
     /// 返回 UniqueId 和 `ModInfo` 的哈希表
-    /// 目前只处理第一层, 后续该进
+    /// 目前只处理第一层, 后续可以引入walkdir处理多层
     pub fn scan_mods(&self) -> HashMap<String, ModInfo> {
         let mut ans = HashMap::new();
         let entries = fs::read_dir(&self.mods_folder_path).expect("Can not read the folder.");
