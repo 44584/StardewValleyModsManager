@@ -1,3 +1,4 @@
+mod link_manager;
 mod mods_manager;
 use std::process::Command;
 
