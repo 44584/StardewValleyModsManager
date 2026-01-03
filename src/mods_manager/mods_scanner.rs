@@ -3,18 +3,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug, Deserialize)]
-pub struct ManifestInfo {
-    pub Name: String,
-    pub Version: String,
-    pub Description: String,
-    pub UniqueId: String,
-}
+use super::{ManifestInfo, ModInfo};
 
-pub struct ModInfo {
-    pub manifest_info: ManifestInfo,
-    pub path: PathBuf,
-}
+#[derive(Debug, Deserialize)]
 
 struct ModScanner {
     mods_folder_path: PathBuf,
@@ -86,7 +77,7 @@ impl ModScanner {
         let manifest_content = fs::read_to_string(&manifest_path)
             .map_err(|e| format!("Failed to read manifest: {}", e))?;
 
-        let manifest = match serde_json::from_str(&manifest_content) {
+        let manifest: ManifestInfo = match serde_json::from_str(&manifest_content) {
             Ok(m) => m,
             Err(e) => return Err(e.to_string()),
         };

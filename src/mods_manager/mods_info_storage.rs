@@ -1,19 +1,66 @@
-use super::mods_scanner;
+use super::{ManifestInfo, ModInfo};
 use rusqlite::{Connection, Result};
+use std::path::PathBuf;
 
-/// 创建数据库文件, 返回Connection实例
-fn establish_connection() -> Result<Connection> {
-    let conn = Connection::open("mod_manager.db")?;
-
-    // 启用外键约束
-    conn.execute("PRAGMA foreign_keys = ON;", [])?;
-
-    Ok(conn)
+pub struct ModManagerDb {
+    conn: Connection,
 }
 
-/// 创建数据库
-fn init_db() -> Result<()> {
-    Ok(())
+impl ModManagerDb {
+    /// 打开或创建数据库连接
+    pub fn new(db_path: PathBuf) -> Result<Self> {
+        let conn = Connection::open(db_path)?;
+
+        // 启用外键约束
+        conn.execute("PRAGMA foreign_keys = ON;", [])?;
+
+        // 创建表
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS mods (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                unique_id TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                version TEXT NOT NULL,
+                description TEXT,
+                mod_path TEXT NOT NULL
+            )",
+            [],
+        )?;
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            [],
+        )?;
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS profile_mods (
+                profile_id INTEGER NOT NULL,
+                mod_id INTEGER NOT NULL,
+                PRIMARY KEY (profile_id, mod_id),
+                FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE,
+                FOREIGN KEY (mod_id) REFERENCES mods(id) ON DELETE CASCADE
+            )",
+            [],
+        )?;
+
+        Ok(ModManagerDb { conn })
+    }
+
+    pub fn get_connection(&self) -> &Connection {
+        &self.conn
+    }
+
+    /// 向数据库的mods表插入多个模组信息
+    pub fn insert_mods(&self, mods: &Vec<ModInfo>) {}
+
+    /// 向数据库的profile插入一条配置
+    /// 模组关联表也要更新信息
+    pub fn insert_profile(&self, profile_name: &str, description: &str, mods: &Vec<ModInfo>) {}
 }
 
 // 数据库表设计
