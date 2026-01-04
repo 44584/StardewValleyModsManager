@@ -123,8 +123,6 @@ mod tests {
         ];
         let _ = l_m.create_links(&mods_path, profile_name);
 
-        let mods_folder_path =
-            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Profiles");
         for mod_name in mods_path {
             let mod_name = mod_name.file_name().unwrap().to_str().unwrap();
             let link_path = l_m
