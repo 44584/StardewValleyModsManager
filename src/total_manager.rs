@@ -3,6 +3,7 @@ use crate::mods_manager;
 use crate::mods_manager::mods_info_storage::ModManagerDb;
 use crate::mods_manager::mods_scanner::ModScanner;
 
+use std::fs;
 use std::path::PathBuf;
 
 //应该让ModInfo和Profile (的成员) 成为通用的统一数据, 这样能使多个接口保持统一
@@ -36,6 +37,20 @@ impl Manager {
     pub fn remove_mod(&self, mod_unique_id: &str) {
         self.database_manager.remove_mod(mod_unique_id);
         //Todo: 删除所有指向这个模组的链接目录
+        // 首先获取profiles文件夹下的所有profile_name
+        let profiles = &self.link_manager.link_parent_path;
+        let profile_name_s: Vec<String> = fs::read_dir(profiles)
+            .unwrap()
+            .filter_map(|entry| entry.ok()) // 过滤掉错误条目，保留Ok值
+            .filter(|entry| entry.file_type().unwrap().is_dir()) // 过滤出目录类型的条目
+            .map(|entry| entry.file_name().to_string_lossy().into_owned()) // 映射为目录名称字符串
+            .collect();
+
+        // 再获取模组名(要绝对可靠, 所以统一使用数据库)
+        let mod_name = &self.database_manager.get_modname_by_uniqueid(mod_unique_id);
+        for pn in &profile_name_s {
+            self.link_manager.remove_mod_from_profile(pn, mod_name);
+        }
     }
 
     /// 返回所有模组的信息
@@ -62,6 +77,7 @@ impl Manager {
     /// - `name`: 配置名
     pub fn remove_profile(&self, name: &str) {
         self.database_manager.remove_profile(name);
+        self.link_manager.remove_profile(name).unwrap();
     }
 
     /// 返回所有的profile

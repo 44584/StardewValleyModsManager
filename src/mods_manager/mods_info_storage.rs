@@ -112,6 +112,18 @@ impl ModManagerDb {
         Ok(mod_info_vec)
     }
 
+    /// 根据uniqueid查询得到name
+    /// 返回空字符串说明没找到
+    pub fn get_modname_by_uniqueid(&self, uniqueid: &str) -> String {
+        self.conn
+            .query_row(
+                "SELECT name FROM mods WHERE unique_id = ?1",
+                rusqlite::params![uniqueid],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|_| "".to_string())
+    }
+
     /// 创建一个空配置
     /// # 参数
     /// - `name`: 配置名

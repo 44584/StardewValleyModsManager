@@ -39,11 +39,11 @@ impl LinkManager {
     /// - 需要cmd的管理员权限,
     /// - 或者 系统>开发者选项>开发人员模式 打开
     /// # 参数
-    /// - `original_dir_paths`：模组实际存放的物理路径的数组;
+    /// - `mod_path_vec`：模组实际存放的物理路径的数组;
     /// - `profile_name`: 配置名称
     pub fn create_links(
         &self,
-        original_dir_paths: &Vec<PathBuf>,
+        mod_path_vec: &Vec<PathBuf>,
         profile_name: &str,
     ) -> std::io::Result<()> {
         //如果profile不存在对应目录, 则创建
@@ -56,7 +56,7 @@ impl LinkManager {
         }
 
         //接下来为参数数组中的每个模组创建目录链接
-        for odp in original_dir_paths {
+        for odp in mod_path_vec {
             let mod_name = odp.file_name().unwrap().to_str().unwrap();
             let _ = self.create_link(odp, &profile_path.join(mod_name));
         }
