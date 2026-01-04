@@ -18,7 +18,7 @@ pub fn create_link(original_dir_path: &PathBuf, link_dir_path: &PathBuf) -> std:
     Ok(())
 }
 
-/// 创建 多个目录符号链接
+/// 创建一个配置并加入多个目录符号链接, 也可以用作向一个配置中添加多个目录符号链接
 /// - 需要cmd的管理员权限,
 /// - 或者 系统>开发者选项>开发人员模式 打开
 /// # 参数
@@ -30,9 +30,11 @@ pub fn create_links(
     mods_folder_path: &PathBuf,
     profile_name: &str,
 ) -> std::io::Result<()> {
-    //首先为profile创建目录
+    //如果profile不存在对应目录, 则创建
     let profile_path = mods_folder_path.join(profile_name);
-    std::fs::create_dir(&profile_path)?;
+    if !profile_path.exists() {
+        std::fs::create_dir(&profile_path)?;
+    }
 
     //接下来为参数数组中的每个模组创建目录链接
     for odp in original_dir_paths {
@@ -42,14 +44,19 @@ pub fn create_links(
     Ok(())
 }
 
-/// use it carefully
+/// 通过删除profile对应的link的folder, 完成删除profile在文件系统的同步
+/// # 参数
+/// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
 pub fn remove_profile(mods_folder_path: &PathBuf, profile_name: &str) -> Result<(), String> {
     match std::fs::remove_dir_all(mods_folder_path.join(profile_name)) {
         Ok(_) => Ok(()),
         Err(e) => Err(e.to_string()),
     }
 }
-
+/// 从配置中移除mod对应的目录链接
+/// # 参数
+/// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
+/// - `mod_name`: 模组名
 pub fn remove_mod_from_profile(
     mods_folder_path: &PathBuf,
     profile_name: &str,
