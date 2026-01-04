@@ -8,6 +8,8 @@ pub struct ModManagerDb {
 
 impl ModManagerDb {
     /// 打开或创建数据库连接
+    /// # 参数
+    /// - `db_path`: db文件的路径
     pub fn new(db_path: PathBuf) -> Result<Self> {
         let conn = Connection::open(db_path)?;
 
@@ -108,6 +110,27 @@ impl ModManagerDb {
     /// - `profile_name`: 配置名
     /// - `mod_info`: 模组信息
     pub fn remove_mod_from_profile(&self, profile_name: &str, mod_info: ModInfo) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_db() -> Result<()> {
+        let db = ModManagerDb::new(PathBuf::from("./test.db")).unwrap();
+        // 检查表是否创建成功
+        let mut stmt = db
+            .get_connection()
+            .prepare("SELECT name FROM sqlite_master WHERE type='table'")?;
+        let tables: Vec<String> = stmt
+            .query_map([], |row| Ok(row.get(0)?))?
+            .collect::<Result<Vec<_>>>()?;
+        eprintln!("{:?}", tables);
+        //这里的1代表sqlite_sequence表, 这是一个SQLite系统表
+        assert_eq!(tables.len(), 1 + 3);
+        Ok(())
+    }
 }
 
 // 数据库表设计
