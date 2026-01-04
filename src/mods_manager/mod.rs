@@ -4,7 +4,7 @@ mod mods_scanner;
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ManifestInfo {
     pub Name: String,
     pub Version: String,
@@ -12,6 +12,7 @@ pub struct ManifestInfo {
     pub UniqueId: String,
 }
 
+#[derive(Clone)]
 pub struct ModInfo {
     pub manifest_info: ManifestInfo,
     pub path: PathBuf,
