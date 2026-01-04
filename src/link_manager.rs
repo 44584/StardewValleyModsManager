@@ -1,12 +1,19 @@
 use std::os::windows;
 use std::path::PathBuf;
 
-pub struct LinkManager {}
+/// `link_parent_path`: 所有配置的父文件夹
+pub struct LinkManager {
+    pub link_parent_path: PathBuf,
+}
 
 // 符号链接在现有的扫描中不会被识别成模组
 impl LinkManager {
-    pub fn new() -> Self {
-        LinkManager {}
+    pub fn default() -> Self {
+        LinkManager {
+            link_parent_path: PathBuf::from(
+                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Profiles",
+            ),
+        }
     }
 
     /// 创建 目录符号链接
@@ -14,8 +21,8 @@ impl LinkManager {
     /// - 或者 系统>开发者选项>开发人员模式 打开
     /// # 参数
     /// - `original_dir_path`：模组实际存放的物理路径;
-    /// - `link_dir_path`：命令执行后, 会创建的目录链接;
-    pub fn create_link(
+    /// - `link_dir_path`：命令执行后, 会创建的目录链接, 要参考self.link_partent_path
+    fn create_link(
         &self,
         original_dir_path: &PathBuf,
         link_dir_path: &PathBuf,
@@ -33,16 +40,17 @@ impl LinkManager {
     /// - 或者 系统>开发者选项>开发人员模式 打开
     /// # 参数
     /// - `original_dir_paths`：模组实际存放的物理路径的数组;
-    /// - `mods_folder_path`：配置文件的目录;
     /// - `profile_name`: 配置名称
     pub fn create_links(
         &self,
         original_dir_paths: &Vec<PathBuf>,
-        mods_folder_path: &PathBuf,
         profile_name: &str,
     ) -> std::io::Result<()> {
         //如果profile不存在对应目录, 则创建
-        let profile_path = mods_folder_path.join(profile_name);
+        if !self.link_parent_path.exists() {
+            std::fs::create_dir(&self.link_parent_path)?;
+        }
+        let profile_path = self.link_parent_path.join(profile_name);
         if !profile_path.exists() {
             std::fs::create_dir(&profile_path)?;
         }
@@ -57,28 +65,23 @@ impl LinkManager {
 
     /// 通过删除profile对应的link的folder, 完成删除profile在文件系统的同步
     /// # 参数
-    /// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
-    pub fn remove_profile(
-        &self,
-        mods_folder_path: &PathBuf,
-        profile_name: &str,
-    ) -> Result<(), String> {
-        match std::fs::remove_dir_all(mods_folder_path.join(profile_name)) {
+    /// - `profile_name`: profile名, 与self.link_parent_path拼接成完整路径
+    pub fn remove_profile(&self, profile_name: &str) -> Result<(), String> {
+        match std::fs::remove_dir_all(self.link_parent_path.join(profile_name)) {
             Ok(_) => Ok(()),
             Err(e) => Err(e.to_string()),
         }
     }
     /// 从配置中移除mod对应的目录链接
     /// # 参数
-    /// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
+    /// - `profile_name`: profile名, 与self.link_parent_path拼接成完整路径
     /// - `mod_name`: 模组名
     pub fn remove_mod_from_profile(
         &self,
-        mods_folder_path: &PathBuf,
         profile_name: &str,
         mod_name: &str,
     ) -> Result<(), String> {
-        match std::fs::remove_dir_all(mods_folder_path.join(profile_name).join(mod_name)) {
+        match std::fs::remove_dir_all(self.link_parent_path.join(profile_name).join(mod_name)) {
             Ok(_) => Ok(()),
             Err(e) => Err(e.to_string()),
         }
@@ -91,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_create_link() {
-        let l_m = LinkManager::new();
+        let l_m = LinkManager::default();
         let original_dir_path = PathBuf::from(
             "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/GoBackHome",
         );
@@ -107,10 +110,8 @@ mod tests {
 
     #[test]
     fn test_create_links() {
-        let l_m = LinkManager::new();
+        let l_m = LinkManager::default();
 
-        let mods_folder_path =
-            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods");
         let profile_name = "test_profile";
         let mods_path = vec![
             PathBuf::from(
@@ -120,22 +121,24 @@ mod tests {
                 "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/ConsoleCommands",
             ),
         ];
-        let _ = l_m.create_links(&mods_path, &mods_folder_path, profile_name);
+        let _ = l_m.create_links(&mods_path, profile_name);
 
+        let mods_folder_path =
+            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Profiles");
         for mod_name in mods_path {
             let mod_name = mod_name.file_name().unwrap().to_str().unwrap();
-            let link_path = mods_folder_path.join(format!("{}/{}", profile_name, mod_name));
+            let link_path = l_m
+                .link_parent_path
+                .join(format!("{}/{}", profile_name, mod_name));
             assert!(link_path.is_dir());
         }
     }
 
     #[test]
     fn test_remove_profile() {
-        let l_m = LinkManager::new();
+        let l_m = LinkManager::default();
 
         let profile_name = "test_profile";
-        let mods_path =
-            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods");
-        let _ = l_m.remove_profile(&mods_path, profile_name);
+        let _ = l_m.remove_profile(profile_name);
     }
 }
