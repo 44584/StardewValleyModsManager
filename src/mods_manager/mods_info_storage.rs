@@ -57,7 +57,7 @@ impl ModManagerDb {
         &self.conn
     }
 
-    /// 向数据库的mods表插入多个模组
+    /// 向数据库的mods表插入多个模组, 如果已存在, 不处理
     /// # 参数
     /// - `mods`:ModInfo的数组
     pub fn insert_mods(&self, mods: &Vec<ModInfo>) {
@@ -69,7 +69,7 @@ impl ModManagerDb {
             let description = mod_info.manifest_info.Description.clone();
             let mod_path = mod_info.path.to_str().unwrap_or("");
 
-            self.conn.execute("INSERT INTO mods (unique_id, name, version, description, mod_path) VALUES (?1, ?2, ?3, ?4, ?5)",
+            self.conn.execute("INSERT OR IGNORE INTO mods (unique_id, name, version, description, mod_path) VALUES (?1, ?2, ?3, ?4, ?5)",
         rusqlite::params![unique_id, name, version, description, mod_path]);
         }
     }
@@ -116,11 +116,12 @@ impl ModManagerDb {
     /// # 参数
     /// - `name`: 配置名
     /// - `description`: 配置描述
-    pub fn create_profile(&self, name: &str, description: &str) {
-        let _ = self.conn.execute(
+    pub fn create_profile(&self, name: &str, description: &str) -> Result<usize, rusqlite::Error> {
+        let ans = self.conn.execute(
             "INSERT INTO profiles (name, description) VALUES (?1, ?2)",
             rusqlite::params![name, description],
-        );
+        )?;
+        Ok(ans)
     }
 
     /// 移除一个配置
