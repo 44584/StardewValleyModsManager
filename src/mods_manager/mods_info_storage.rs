@@ -1,4 +1,4 @@
-use super::{ManifestInfo, ModInfo};
+use super::{ManifestInfo, ModInfo, Profile};
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;
 
@@ -55,12 +55,59 @@ impl ModManagerDb {
         &self.conn
     }
 
-    /// 向数据库的mods表插入多个模组信息
+    /// 向数据库的mods表插入多个模组
+    /// # 参数
+    /// - `mods`:ModInfo的数组
     pub fn insert_mods(&self, mods: &Vec<ModInfo>) {}
 
-    /// 向数据库的profile插入一条配置
-    /// 模组关联表也要更新信息
-    pub fn insert_profile(&self, profile_name: &str, description: &str, mods: &Vec<ModInfo>) {}
+    /// 从数据库中的mods中删除单个模组, 同时会从所有配置中移除该模组
+    /// # 参数
+    /// - `mod_unique_id`: 需要删除的模组的uinque_id
+    pub fn remove_mod(&self, mod_unique_id: &ModInfo) {}
+
+    /// 查询所有模组
+    /// - 返回值: ModInfo的数组
+    pub fn get_mods(&self) -> Vec<ModInfo> {
+        Vec::new()
+    }
+
+    /// 创建一个空配置
+    /// # 参数
+    /// - `name`: 配置名
+    /// - `description`: 配置描述
+    pub fn create_profile(&self, name: &str, description: &str) {}
+
+    /// 移除一个配置
+    /// # 参数
+    /// - `name`: 配置名
+    pub fn remove_profile(&self, name: &str) {}
+
+    /// 查询所有配置
+    /// - 返回值: 配置的数组
+    pub fn get_profiles(&self) -> Vec<Profile> {
+        Vec::new()
+    }
+
+    /// 查询一个配置中使用的模组
+    /// # 参数
+    /// - `profile_name`: 配置名
+    /// # 返回
+    /// - 模组信息数组
+    pub fn get_mods_from_profile(&self, profile_name: &str) -> Vec<ModInfo> {
+        Vec::new()
+    }
+
+    /// 向一个配置中插入一个模组
+    /// # 参数
+    /// - `profile_name`: 配置名
+    /// - `mods`: 模组信息
+    pub fn insert_mod_to_profile(&self, profile_name: &str, mods: &Vec<ModInfo>) {}
+
+    /// 从一个配置中移除一个模组
+    /// # 参数
+    /// - `profile_name`: 配置名
+    /// - `mod_info`: 模组信息
+    pub fn remove_mod_from_profile(&self, profile_name: &str, mod_info: ModInfo) {}
 }
 
 // 数据库表设计

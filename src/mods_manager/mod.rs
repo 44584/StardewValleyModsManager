@@ -16,3 +16,9 @@ pub struct ModInfo {
     pub manifest_info: ManifestInfo,
     pub path: PathBuf,
 }
+
+pub struct Profile {
+    pub name: String,
+    pub description: String,
+    pub create_time: String,
+}
