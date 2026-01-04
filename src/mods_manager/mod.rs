@@ -1,5 +1,5 @@
-mod mods_info_storage;
-mod mods_scanner;
+pub mod mods_info_storage;
+pub mod mods_scanner;
 
 use serde::Deserialize;
 use std::path::PathBuf;

@@ -1,5 +1,6 @@
 mod link_manager;
 mod mods_manager;
+mod total_manager;
 use std::process::Command;
 
 fn main() {

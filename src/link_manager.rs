@@ -1,70 +1,87 @@
 use std::os::windows;
 use std::path::PathBuf;
 
+pub struct LinkManager {}
+
 // 符号链接在现有的扫描中不会被识别成模组
-
-/// 创建 目录符号链接
-/// - 需要cmd的管理员权限,
-/// - 或者 系统>开发者选项>开发人员模式 打开
-/// # 参数
-/// - `original_dir_path`：模组实际存放的物理路径;
-/// - `link_dir_path`：命令执行后, 会创建的目录链接;
-pub fn create_link(original_dir_path: &PathBuf, link_dir_path: &PathBuf) -> std::io::Result<()> {
-    windows::fs::symlink_dir(original_dir_path, link_dir_path)?;
-    eprintln!(
-        "{:?} -> {:?} 符号链接创建成功.",
-        link_dir_path, original_dir_path
-    );
-    Ok(())
-}
-
-/// 创建一个配置并加入多个目录符号链接, 也可以用作向一个配置中添加多个目录符号链接
-/// - 需要cmd的管理员权限,
-/// - 或者 系统>开发者选项>开发人员模式 打开
-/// # 参数
-/// - `original_dir_paths`：模组实际存放的物理路径的数组;
-/// - `mods_folder_path`：配置文件的目录;
-/// - `profile_name`: 配置名称
-pub fn create_links(
-    original_dir_paths: &Vec<PathBuf>,
-    mods_folder_path: &PathBuf,
-    profile_name: &str,
-) -> std::io::Result<()> {
-    //如果profile不存在对应目录, 则创建
-    let profile_path = mods_folder_path.join(profile_name);
-    if !profile_path.exists() {
-        std::fs::create_dir(&profile_path)?;
+impl LinkManager {
+    pub fn new() -> Self {
+        LinkManager {}
     }
 
-    //接下来为参数数组中的每个模组创建目录链接
-    for odp in original_dir_paths {
-        let mod_name = odp.file_name().unwrap().to_str().unwrap();
-        let _ = create_link(odp, &profile_path.join(mod_name));
+    /// 创建 目录符号链接
+    /// - 需要cmd的管理员权限,
+    /// - 或者 系统>开发者选项>开发人员模式 打开
+    /// # 参数
+    /// - `original_dir_path`：模组实际存放的物理路径;
+    /// - `link_dir_path`：命令执行后, 会创建的目录链接;
+    pub fn create_link(
+        &self,
+        original_dir_path: &PathBuf,
+        link_dir_path: &PathBuf,
+    ) -> std::io::Result<()> {
+        windows::fs::symlink_dir(original_dir_path, link_dir_path)?;
+        eprintln!(
+            "{:?} -> {:?} 符号链接创建成功.",
+            link_dir_path, original_dir_path
+        );
+        Ok(())
     }
-    Ok(())
-}
 
-/// 通过删除profile对应的link的folder, 完成删除profile在文件系统的同步
-/// # 参数
-/// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
-pub fn remove_profile(mods_folder_path: &PathBuf, profile_name: &str) -> Result<(), String> {
-    match std::fs::remove_dir_all(mods_folder_path.join(profile_name)) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e.to_string()),
+    /// 创建一个配置并加入多个目录符号链接, 也可以用作向一个配置中添加多个目录符号链接
+    /// - 需要cmd的管理员权限,
+    /// - 或者 系统>开发者选项>开发人员模式 打开
+    /// # 参数
+    /// - `original_dir_paths`：模组实际存放的物理路径的数组;
+    /// - `mods_folder_path`：配置文件的目录;
+    /// - `profile_name`: 配置名称
+    pub fn create_links(
+        &self,
+        original_dir_paths: &Vec<PathBuf>,
+        mods_folder_path: &PathBuf,
+        profile_name: &str,
+    ) -> std::io::Result<()> {
+        //如果profile不存在对应目录, 则创建
+        let profile_path = mods_folder_path.join(profile_name);
+        if !profile_path.exists() {
+            std::fs::create_dir(&profile_path)?;
+        }
+
+        //接下来为参数数组中的每个模组创建目录链接
+        for odp in original_dir_paths {
+            let mod_name = odp.file_name().unwrap().to_str().unwrap();
+            let _ = self.create_link(odp, &profile_path.join(mod_name));
+        }
+        Ok(())
     }
-}
-/// 从配置中移除mod对应的目录链接
-/// # 参数
-/// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
-/// - `mod_name`: 模组名
-pub fn remove_mod_from_profile(
-    mods_folder_path: &PathBuf,
-    profile_name: &str,
-    mod_name: &str,
-) -> Result<(), String> {
-    match std::fs::remove_dir_all(mods_folder_path.join(profile_name).join(mod_name)) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e.to_string()),
+
+    /// 通过删除profile对应的link的folder, 完成删除profile在文件系统的同步
+    /// # 参数
+    /// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
+    pub fn remove_profile(
+        &self,
+        mods_folder_path: &PathBuf,
+        profile_name: &str,
+    ) -> Result<(), String> {
+        match std::fs::remove_dir_all(mods_folder_path.join(profile_name)) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+    /// 从配置中移除mod对应的目录链接
+    /// # 参数
+    /// - `mods_folder_path`+`profile_name`: profile对应的目录的完整路径
+    /// - `mod_name`: 模组名
+    pub fn remove_mod_from_profile(
+        &self,
+        mods_folder_path: &PathBuf,
+        profile_name: &str,
+        mod_name: &str,
+    ) -> Result<(), String> {
+        match std::fs::remove_dir_all(mods_folder_path.join(profile_name).join(mod_name)) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_string()),
+        }
     }
 }
 
@@ -74,13 +91,14 @@ mod tests {
 
     #[test]
     fn test_create_link() {
+        let l_m = LinkManager::new();
         let original_dir_path = PathBuf::from(
             "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/GoBackHome",
         );
         let link_dir_path =
             PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/gbh");
 
-        let _ = create_link(&original_dir_path, &link_dir_path);
+        let _ = l_m.create_link(&original_dir_path, &link_dir_path);
 
         let link_dir_path =
             PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/gbh");
@@ -89,6 +107,8 @@ mod tests {
 
     #[test]
     fn test_create_links() {
+        let l_m = LinkManager::new();
+
         let mods_folder_path =
             PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods");
         let profile_name = "test_profile";
@@ -100,7 +120,7 @@ mod tests {
                 "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/ConsoleCommands",
             ),
         ];
-        let _ = create_links(&mods_path, &mods_folder_path, profile_name);
+        let _ = l_m.create_links(&mods_path, &mods_folder_path, profile_name);
 
         for mod_name in mods_path {
             let mod_name = mod_name.file_name().unwrap().to_str().unwrap();
@@ -111,9 +131,11 @@ mod tests {
 
     #[test]
     fn test_remove_profile() {
+        let l_m = LinkManager::new();
+
         let profile_name = "test_profile";
         let mods_path =
             PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods");
-        let _ = remove_profile(&mods_path, profile_name);
+        let _ = l_m.remove_profile(&mods_path, profile_name);
     }
 }

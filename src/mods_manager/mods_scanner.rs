@@ -7,7 +7,7 @@ use super::{ManifestInfo, ModInfo};
 
 #[derive(Debug, Deserialize)]
 
-struct ModScanner {
+pub struct ModScanner {
     mods_folder_path: PathBuf,
 }
 
