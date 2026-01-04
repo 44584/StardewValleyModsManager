@@ -5,6 +5,8 @@ use crate::mods_manager::mods_scanner::ModScanner;
 
 use std::path::PathBuf;
 
+//应该让ModInfo和Profile (的成员) 成为通用的统一数据, 这样能使多个接口保持统一
+
 struct Manager {
     scanner: ModScanner,
     database_manager: ModManagerDb,
