@@ -103,22 +103,26 @@ mod tests {
     #[test]
     fn test_json_parse1() {
         let modScanner = ModScanner::default();
-        let test_mod_path = modScanner.mods_folder_path.join("GoBackHome");
-        let mod_info = modScanner.scan_single_mod(&test_mod_path).unwrap().unwrap();
+        let test_mod_path = modScanner.mods_folder_path.join("NPC不踢箱子");
+        let mod_info = modScanner.scan_single_mod(&test_mod_path);
+        let mod_info = match mod_info {
+            Ok(op) => op.unwrap(),
+            Err(e) => panic!("{}", e),
+        };
         let manifest = mod_info.manifest_info;
         assert_eq!(
             mod_info.path,
             PathBuf::from(
-                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/GoBackHome"
+                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/NPC不踢箱子"
             )
         );
-        assert_eq!(manifest.Name, "GoBackHome");
-        assert_eq!(manifest.Version, "1.0.0");
+        assert_eq!(manifest.Name, "NPC不踢箱子");
+        assert_eq!(manifest.Version, "3.1.0");
         assert_eq!(
             manifest.Description,
-            "After the player presses Q, he/she will go back home immediately."
+            "NPCs no longer destroy placed objects in their paths. They would instead pass through them."
         );
-        assert_eq!(manifest.UniqueId, "SilcentHonestFarmer.GoBackHome");
+        assert_eq!(manifest.UniqueId, "IamSaulC.NonDestructiveNPCs");
     }
 
     #[test]
