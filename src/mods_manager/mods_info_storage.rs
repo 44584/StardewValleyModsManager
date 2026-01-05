@@ -130,7 +130,7 @@ impl ModManagerDb {
     /// - `description`: 配置描述
     pub fn create_profile(&self, name: &str, description: &str) -> Result<usize, rusqlite::Error> {
         let ans = self.conn.execute(
-            "INSERT INTO profiles (name, description) VALUES (?1, ?2)",
+            "INSERT OR IGNORE INTO profiles (name, description) VALUES (?1, ?2)",
             rusqlite::params![name, description],
         )?;
         Ok(ans)
@@ -240,7 +240,7 @@ impl ModManagerDb {
                     .ok();
                 if let Some(mod_id) = mod_id {
                     let _ = self.conn.execute(
-                        "INSERT OR IGNORE INTO profile_mods (profile_id, mod_id) VALUES (?1, ?2)",
+                        "INSERT INTO profile_mods (profile_id, mod_id) VALUES (?1, ?2)",
                         rusqlite::params![profile_id, mod_id],
                     );
                 }

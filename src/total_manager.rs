@@ -2,21 +2,33 @@ use crate::link_manager::LinkManager;
 use crate::mods_manager;
 use crate::mods_manager::mods_info_storage::ModManagerDb;
 use crate::mods_manager::mods_scanner::ModScanner;
+use std::process::Command;
 
 use std::fs;
 use std::path::PathBuf;
 
 //应该让ModInfo和Profile (的成员) 成为通用的统一数据, 这样能使多个接口保持统一
 
-struct Manager {
+pub struct Manager {
+    smapi_path: PathBuf,
     scanner: ModScanner,
     database_manager: ModManagerDb,
     link_manager: LinkManager,
 }
 
 impl Manager {
+    /// 允许在测试时设置scanner的mods路径
+    pub fn set_scanner_mods_path(&mut self, mods_path: PathBuf) {
+        self.scanner.set_mods_path(mods_path);
+    }
+}
+
+impl Manager {
     pub fn default() -> Self {
         Manager {
+            smapi_path: PathBuf::from(
+                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/StardewModdingAPI.exe",
+            ),
             scanner: ModScanner::default(),
             database_manager: ModManagerDb::new(PathBuf::from("./mod_manager.db")).unwrap(),
             link_manager: LinkManager::default(),
@@ -90,5 +102,34 @@ impl Manager {
     /// - `profile_name`: profile名
     pub fn get_mods_from_profile(&self, profile_name: &str) -> Vec<mods_manager::ModInfo> {
         self.database_manager.get_mods_from_profile(profile_name)
+    }
+
+    /// 在指定profile中加入一些模组
+    /// # 参数
+    /// -  `mods`: 模组的数组, Vec<ModInfo>
+    /// - `profile_name`: 配置名
+    pub fn insert_mods_to_profile(&self, mods: Vec<mods_manager::ModInfo>, profile_name: &str) {
+        self.database_manager
+            .insert_mod_to_profile(profile_name, &mods);
+        let mod_path_vec = mods.into_iter().map(|mi| mi.path).collect();
+        self.link_manager.create_links(&mod_path_vec, profile_name);
+    }
+
+    /// 从指定配置中移除某个模组
+    pub fn remove_mod_from_profile(&self, mod_info: mods_manager::ModInfo, profile_name: &str) {
+        self.database_manager
+            .remove_mod_from_profile(profile_name, mod_info.clone());
+        let mod_name = mod_info.manifest_info.Name.clone();
+        self.link_manager
+            .remove_mod_from_profile(profile_name, &mod_name);
+    }
+
+    pub fn launch_stardew_valley(&self, profile_name: &str) {
+        let child = Command::new(&self.smapi_path)
+            .arg("--mods-path")
+            .arg(self.link_manager.link_parent_path.join(profile_name))
+            .spawn()
+            .unwrap();
+        eprintln!("{}已启动", child.id());
     }
 }

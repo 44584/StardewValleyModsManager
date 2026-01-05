@@ -82,7 +82,10 @@ impl LinkManager {
         mod_name: &str,
     ) -> Result<(), String> {
         match std::fs::remove_dir_all(self.link_parent_path.join(profile_name).join(mod_name)) {
-            Ok(_) => Ok(()),
+            Ok(_) => {
+                eprintln!("link_manager: {} removed.", mod_name);
+                Ok(())
+            }
             Err(e) => Err(e.to_string()),
         }
     }
@@ -96,15 +99,15 @@ mod tests {
     fn test_create_link() {
         let l_m = LinkManager::default();
         let original_dir_path = PathBuf::from(
-            "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/GoBackHome",
+            "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/GoBackHome",
         );
-        let link_dir_path =
-            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/gbh");
+        let link_dir_path = l_m
+            .link_parent_path
+            .join("test1_profile")
+            .join("GoBackHome");
 
         let _ = l_m.create_link(&original_dir_path, &link_dir_path);
 
-        let link_dir_path =
-            PathBuf::from("C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/gbh");
         assert!(link_dir_path.is_dir());
     }
 
@@ -115,19 +118,19 @@ mod tests {
         let profile_name = "test_profile";
         let mods_path = vec![
             PathBuf::from(
-                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/GoBackHome",
+                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/GoBackHome",
             ),
             PathBuf::from(
-                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods_simple/ConsoleCommands",
+                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/Mods/ConsoleCommands",
             ),
         ];
         let _ = l_m.create_links(&mods_path, profile_name);
 
-        for mod_name in mods_path {
-            let mod_name = mod_name.file_name().unwrap().to_str().unwrap();
+        for mp in mods_path {
+            let mod_folder_name = mp.file_name().unwrap().to_str().unwrap();
             let link_path = l_m
                 .link_parent_path
-                .join(format!("{}/{}", profile_name, mod_name));
+                .join(format!("{}/{}", profile_name, mod_folder_name));
             assert!(link_path.is_dir());
         }
     }

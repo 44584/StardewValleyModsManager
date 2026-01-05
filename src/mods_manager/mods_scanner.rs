@@ -12,6 +12,13 @@ pub struct ModScanner {
 }
 
 impl ModScanner {
+    /// 允许动态设置mods目录
+    pub fn set_mods_path(&mut self, mods_path: PathBuf) {
+        self.mods_folder_path = mods_path;
+    }
+}
+
+impl ModScanner {
     /// 使用默认的模组目录
     pub fn default() -> Self {
         ModScanner {

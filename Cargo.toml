@@ -7,3 +7,7 @@ edition = "2024"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rusqlite = { version = "0.38.0", features = ["bundled"] } # 使用捆绑的SQLite，避免系统依赖
+
+[lib]
+name = "StardewModsManager"
+path = "src/lib.rs"
