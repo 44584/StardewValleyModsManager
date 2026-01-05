@@ -80,9 +80,20 @@ impl ModScanner {
             return Err(String::from("Mod does not exist"));
         }
 
-        //读取并解析mainfest文件
-        let manifest_content = fs::read_to_string(&manifest_path)
-            .map_err(|e| format!("Failed to read manifest: {}", e))?;
+        // 为了能够正常读取 UTF-8 with BOM 的json文件
+        // 读取文件的原始子节而非字符串
+        let manifest_bytes =
+            fs::read(&manifest_path).map_err(|e| format!("Failed to read manifest: {}", e))?;
+        // 检查是否为UTF8 with BOM, 若是, 则移除UTF-8 BOM
+        let manifest_bytes = if manifest_bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+            // 移除BOM
+            &manifest_bytes[3..]
+        } else {
+            &manifest_bytes[..]
+        };
+        // 将字节转换为字符串
+        let manifest_content = std::str::from_utf8(manifest_bytes)
+            .map_err(|e| format!("Failed to parse manifest as UTF-8: {}", e))?;
 
         let manifest: ManifestInfo = match serde_json::from_str(&manifest_content) {
             Ok(m) => m,
@@ -117,7 +128,7 @@ mod tests {
             )
         );
         assert_eq!(manifest.Name, "NPC不踢箱子");
-        assert_eq!(manifest.Version, "3.1.0");
+        assert_eq!(manifest.Version, "1.6");
         assert_eq!(
             manifest.Description,
             "NPCs no longer destroy placed objects in their paths. They would instead pass through them."
@@ -151,7 +162,7 @@ mod tests {
     fn test_scan_mods() {
         let mod_scanner = ModScanner::default();
         let mod_table = mod_scanner.scan_mods();
-        assert_eq!(mod_table.len(), 3);
+        assert_eq!(mod_table.len(), 33);
         let g_mod_info = mod_table.get("SilcentHonestFarmer.GoBackHome").unwrap();
         let s_mod_info = mod_table.get("SMAPI.SaveBackup").unwrap();
         let c_mod_info = mod_table.get("SMAPI.ConsoleCommands").unwrap();

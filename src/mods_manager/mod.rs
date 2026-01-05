@@ -9,6 +9,7 @@ pub struct ManifestInfo {
     pub Name: String,
     pub Version: String,
     pub Description: String,
+    #[serde(alias = "UniqueID")] // 支持 UniqueID 和 UniqueId 两种字段名, 支持不同的manifest文件
     pub UniqueId: String,
 }
 
