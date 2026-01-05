@@ -24,6 +24,36 @@ impl StardewModsManagerApp {
             scanned: true,
         }
     }
+
+    /// 添加中文字体到 egui
+    pub fn add_chinese_font(ctx: &egui::Context) {
+        use egui::{FontDefinitions, FontFamily, FontId, TextStyle};
+
+        let mut fonts = FontDefinitions::default();
+
+        // 加载自定义中文字体
+        use std::sync::Arc;
+        fonts.font_data.insert(
+            "my_chinese_font".to_owned(),
+            Arc::new(egui::FontData::from_static(include_bytes!(
+                "../assets/fonts/NotoSansSC-Regular.ttf"
+            ))),
+        );
+
+        // 将自定义字体添加到比例字体和等宽字体的字体族中
+        fonts
+            .families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .insert(0, "my_chinese_font".to_owned());
+        fonts
+            .families
+            .entry(FontFamily::Monospace)
+            .or_default()
+            .push("my_chinese_font".to_owned());
+
+        ctx.set_fonts(fonts);
+    }
 }
 
 impl eframe::App for StardewModsManagerApp {
@@ -33,23 +63,23 @@ impl eframe::App for StardewModsManagerApp {
         style.text_styles = [
             (
                 egui::TextStyle::Heading,
-                egui::FontId::new(32.0, FontFamily::Proportional),
+                egui::FontId::new(20.0, FontFamily::Proportional),
             ),
             (
                 egui::TextStyle::Body,
-                egui::FontId::new(22.0, FontFamily::Proportional),
+                egui::FontId::new(18.0, FontFamily::Proportional),
             ),
             (
                 egui::TextStyle::Monospace,
-                egui::FontId::new(20.0, FontFamily::Monospace),
+                egui::FontId::new(16.0, FontFamily::Monospace),
             ),
             (
                 egui::TextStyle::Button,
-                egui::FontId::new(22.0, FontFamily::Proportional),
+                egui::FontId::new(18.0, FontFamily::Proportional),
             ),
             (
                 egui::TextStyle::Small,
-                egui::FontId::new(18.0, FontFamily::Proportional),
+                egui::FontId::new(14.0, FontFamily::Proportional),
             ),
         ]
         .into();
@@ -69,7 +99,7 @@ impl eframe::App for StardewModsManagerApp {
             // 查看已注册的模组并多选
             ui.label("ALL MODS");
             egui::ScrollArea::vertical()
-                .max_height(120.0)
+                .max_height(240.0)
                 .show(ui, |ui| {
                     for modinfo in self.manager.get_registered_mods() {
                         let unique_id = &modinfo.manifest_info.UniqueId;
