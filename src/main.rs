@@ -1,21 +1,11 @@
-mod link_manager;
-mod mods_manager;
-mod total_manager;
-use std::process::Command;
+use eframe::egui;
+use StardewModsManager::ui::StardewModsManagerApp;
 
-fn main() {
-    let smapi_path =
-        "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/StardewModdingAPI.exe";
-    let mods_folder_path = "Mods_simple";
-
-    launch_stardew_valley(smapi_path, mods_folder_path);
-}
-
-fn launch_stardew_valley(smapi_path: &str, mods_folder_path: &str) {
-    let child = Command::new(smapi_path)
-        .arg("--mods-path")
-        .arg(mods_folder_path)
-        .spawn()
-        .unwrap();
-    eprintln!("{}已启动", child.id());
+fn main() -> eframe::Result<()> {
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Stardew Mods Manager",
+        options,
+        Box::new(|_cc| Ok(Box::new(StardewModsManagerApp::new()))),
+    )
 }
