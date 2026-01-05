@@ -25,12 +25,21 @@ impl Manager {
 
 impl Manager {
     pub fn default() -> Self {
+        // 获取用户数据目录
+        let data_dir = dirs::data_dir()
+            .unwrap_or_else(|| std::env::current_dir().unwrap())
+            .join("StardewModsManager");
+        // 若不存在,创建
+        fs::create_dir_all(&data_dir).unwrap_or_else(|e| {
+            eprintln!("无法创建数据目录 {:?}: {}", data_dir, e);
+        });
+        let db_path = data_dir.join("mod_manager.db");
         Manager {
             smapi_path: PathBuf::from(
                 "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/StardewModdingAPI.exe",
             ),
             scanner: ModScanner::default(),
-            database_manager: ModManagerDb::new(PathBuf::from("./mod_manager.db")).unwrap(),
+            database_manager: ModManagerDb::new(db_path).unwrap(),
             link_manager: LinkManager::default(),
         }
     }
