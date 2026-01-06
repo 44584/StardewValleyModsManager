@@ -25,7 +25,7 @@ impl Manager {
 
 impl Manager {
     pub fn default() -> Self {
-        // 获取用户数据目录
+        // 获取用户数据以及配置文件夹
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| std::env::current_dir().unwrap())
             .join("StardewModsManager");
@@ -34,11 +34,25 @@ impl Manager {
             eprintln!("无法创建数据目录 {:?}: {}", data_dir, e);
         });
         let db_path = data_dir.join("mod_manager.db");
+        let config_path = data_dir.join("setting.toml");
+
+        // 如果配置文件存在, 说明已经配置模组目录;
+        // 否则为首次使用, 用户可以输入自定义模组目录
+        let scanner = if config_path.exists() {
+            if let Some(cfg) = crate::config::AppConfig::load_from_file(&config_path) {
+                ModScanner::from(&cfg.mods_folder_path)
+            } else {
+                ModScanner::default()
+            }
+        } else {
+            ModScanner::default()
+        };
+
         Manager {
             smapi_path: PathBuf::from(
                 "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/StardewModdingAPI.exe",
             ),
-            scanner: ModScanner::default(),
+            scanner,
             database_manager: ModManagerDb::new(db_path).unwrap(),
             link_manager: LinkManager::default(),
         }

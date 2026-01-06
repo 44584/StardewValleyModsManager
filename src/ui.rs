@@ -9,12 +9,21 @@ pub struct StardewModsManagerApp {
     new_profile_name: String,
     new_profile_desc: String,
     scanned: bool,
+    // 支持用户自定义模组文件夹目录
+    mods_folder_input: String,
+    show_mods_folder_setting: bool,
 }
 
 impl StardewModsManagerApp {
     pub fn new() -> Self {
         let manager = Manager::default();
         manager.register_all_mods(); // 启动时扫描并注册模组
+
+        let data_dir = dirs::data_dir()
+            .unwrap_or_else(|| std::env::current_dir().unwrap())
+            .join("StardewModsManager");
+        let config_path = data_dir.join("setting.toml");
+        let show_mods_folder_setting = !config_path.exists();
         Self {
             manager,
             selected_profile: None,
@@ -22,6 +31,8 @@ impl StardewModsManagerApp {
             new_profile_name: String::new(),
             new_profile_desc: String::new(),
             scanned: true,
+            mods_folder_input: String::new(),
+            show_mods_folder_setting,
         }
     }
 
@@ -94,10 +105,39 @@ impl eframe::App for StardewModsManagerApp {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Stardew Mods Manager");
+            if self.show_mods_folder_setting {
+                ui.heading("首次使用? 可设置模组文件夹路径, 例如: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
+                ui.horizontal(|ui| {
+                    ui.label("Mods 文件夹路径:");
+                    ui.text_edit_singleline(&mut self.mods_folder_input);
+                    if ui.button("保存").clicked() {
+                        if !self.mods_folder_input.trim().is_empty() {
+                            let data_dir = dirs::data_dir()
+                                .unwrap_or_else(|| std::env::current_dir().unwrap())
+                                .join("StardewModsManager");
+                            let config_path = data_dir.join("setting.toml");
+                            let cfg = crate::config::AppConfig {
+                                mods_folder_path: self.mods_folder_input.clone(),
+                            };
+                            if let Err(e) = cfg.save_to_file(&config_path) {
+                                ui.label(format!("保存失败: {}", e));
+                            } else {
+                                // 设置scanner路径并隐藏设置界面
+                                self.manager.set_scanner_mods_path(std::path::PathBuf::from(
+                                    &self.mods_folder_input,
+                                ));
+                                self.show_mods_folder_setting = false;
+                                self.manager.register_all_mods();
+                            }
+                        }
+                    }
+                });
+                ui.separator();
+            }
+            ui.heading("StardewModsManager");
             ui.separator();
             // 查看已注册的模组并多选
-            ui.label("ALL MODS");
+            ui.label("所有模组");
             egui::ScrollArea::vertical()
                 .max_height(240.0)
                 .show(ui, |ui| {
@@ -119,7 +159,7 @@ impl eframe::App for StardewModsManagerApp {
                     }
                 });
             if let Some(profile_name) = &self.selected_profile {
-                if ui.button("ADD SELECTED MODS TO CURRENT PROFILE").clicked() {
+                if ui.button("选中的模组添加到选中的配置").clicked() {
                     let all_mods = self.manager.get_registered_mods();
                     let to_add: Vec<_> = all_mods
                         .into_iter()
@@ -130,7 +170,7 @@ impl eframe::App for StardewModsManagerApp {
             }
             ui.separator();
             // profile 增删查
-            ui.label("PROFILES");
+            ui.label("所有配置");
             let profiles = self.manager.get_all_profiles();
             for profile in &profiles {
                 ui.horizontal(|ui| {
@@ -138,18 +178,18 @@ impl eframe::App for StardewModsManagerApp {
                     if ui.selectable_label(selected, &profile.name).clicked() {
                         self.selected_profile = Some(profile.name.clone());
                     }
-                    if ui.button("delete").clicked() {
+                    if ui.button("删除配置").clicked() {
                         self.manager.remove_profile(&profile.name);
                     }
-                    ui.label(format!("description: {}", profile.description));
+                    ui.label(format!("信息: {}", profile.description));
                 });
             }
             ui.horizontal(|ui| {
-                ui.label("name:");
+                ui.label("配置名:");
                 ui.text_edit_singleline(&mut self.new_profile_name);
-                ui.label("description:");
+                ui.label("配置信息:");
                 ui.text_edit_singleline(&mut self.new_profile_desc);
-                if ui.button("new").clicked() {
+                if ui.button("创建").clicked() {
                     if !self.new_profile_name.trim().is_empty() {
                         self.manager
                             .create_empty_profile(&self.new_profile_name, &self.new_profile_desc);
@@ -161,12 +201,12 @@ impl eframe::App for StardewModsManagerApp {
             ui.separator();
             // profile下模组管理
             if let Some(profile_name) = &self.selected_profile {
-                ui.label(format!("MODS IN {}", profile_name));
+                ui.label(format!("{}的模组", profile_name));
                 let mods = self.manager.get_mods_from_profile(profile_name);
                 for modinfo in &mods {
                     ui.horizontal(|ui| {
                         ui.label(&modinfo.manifest_info.Name);
-                        if ui.button("REMOVE").clicked() {
+                        if ui.button("从配置中移除").clicked() {
                             self.manager
                                 .remove_mod_from_profile(modinfo.clone(), profile_name);
                         }
@@ -176,7 +216,7 @@ impl eframe::App for StardewModsManagerApp {
             ui.separator();
             // 选择profile启动游戏
             if let Some(profile_name) = &self.selected_profile {
-                if ui.button("LAUNCH").clicked() {
+                if ui.button("启动").clicked() {
                     self.manager.launch_stardew_valley(profile_name);
                 }
             }
