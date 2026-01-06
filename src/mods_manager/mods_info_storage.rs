@@ -148,11 +148,19 @@ impl ModManagerDb {
     /// 移除一个配置
     /// # 参数
     /// - `name`: 配置名
-    pub fn remove_profile(&self, name: &str) {
+    /// # 返回值
+    /// 剩余的配置数
+    pub fn remove_profile(&self, name: &str) -> Result<u16, rusqlite::Error> {
         let _ = self.conn.execute(
             "DELETE FROM profiles WHERE name = ?1",
             rusqlite::params![name],
         );
+
+        self.conn.query_row(
+            "SELECT COUNT(*) FROM profiles",
+            rusqlite::params![],
+            |row| row.get(0),
+        )
     }
 
     /// 查询所有配置

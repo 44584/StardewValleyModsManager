@@ -164,13 +164,16 @@ impl eframe::App for StardewModsManagerApp {
                     }
                 });
             if let Some(profile_name) = &self.selected_profile {
-                if ui.button("选中的模组添加到选中的配置").clicked() {
+                let button_content = format!("选中的模组添加到{}", self.selected_profile.as_ref().unwrap());
+                if ui.button(button_content).clicked() {
                     let all_mods = self.manager.get_registered_mods();
                     let to_add: Vec<_> = all_mods
                         .into_iter()
                         .filter(|m| self.selected_mods.contains(&m.manifest_info.UniqueId))
                         .collect();
                     self.manager.insert_mods_to_profile(to_add, profile_name);
+                    // 然后清空选中的模组
+                    self.selected_mods.clear();
                 }
             }
             ui.separator();
@@ -184,7 +187,18 @@ impl eframe::App for StardewModsManagerApp {
                         self.selected_profile = Some(profile.name.clone());
                     }
                     if ui.button("删除配置").clicked() {
-                        self.manager.remove_profile(&profile.name);
+                       match self.manager.remove_profile(&profile.name){
+                        Ok(n)=>{
+                            if n==0{
+                                self.selected_mods.clear();
+                            }
+                        }
+                        Err(e) => {
+                            ui.horizontal(|ui| {
+                                ui.label(format!("删除失败:{}", e));
+                            });
+                        }
+                       }
                     }
                     ui.label(format!("信息: {}", profile.description));
                 });

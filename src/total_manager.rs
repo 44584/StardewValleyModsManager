@@ -109,9 +109,10 @@ impl Manager {
     /// 删除一个配置
     /// # 参数
     /// - `name`: 配置名
-    pub fn remove_profile(&self, name: &str) {
-        self.database_manager.remove_profile(name);
+    pub fn remove_profile(&self, name: &str) -> Result<u16, rusqlite::Error> {
+        let num_profiles = self.database_manager.remove_profile(name);
         self.link_manager.remove_profile(name).unwrap();
+        num_profiles
     }
 
     /// 返回所有的profile

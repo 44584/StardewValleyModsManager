@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use walkdir::WalkDir;
 
 use super::{ManifestInfo, ModInfo};
 
@@ -42,15 +43,14 @@ impl ModScanner {
     /// 目前只处理第一层, 后续可以引入walkdir处理多层
     pub fn scan_mods(&self) -> HashMap<String, ModInfo> {
         let mut ans = HashMap::new();
-        let entries = fs::read_dir(&self.mods_folder_path).expect("Can not read the folder.");
-        for entry in entries {
-            let entry = entry.expect("Can not read entry.");
-            if entry.file_type().unwrap().is_file() {
-                continue;
-            }
+        let entries = WalkDir::new(&self.mods_folder_path).max_depth(2);
+        for entry in entries
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| !e.file_type().is_file())
+        {
             eprintln!("{:?}", entry);
-
-            let mod_info = self.scan_single_mod(&entry.path());
+            let mod_info = self.scan_single_mod(&entry.into_path());
             let mod_info = match mod_info {
                 Ok(reslut) => reslut.unwrap(),
                 Err(_) => {
