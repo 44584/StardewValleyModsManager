@@ -107,11 +107,10 @@ impl eframe::App for StardewModsManagerApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.is_beginner {
-                ui.heading("首次使用? 请填写模组文件夹路径和smapi路径");
-                self.mods_folder_input = String::from(
-                    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods",
-                );
-                self.smapi_path_input = String::from("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley/StardewModdingAPI.exe");
+                ui.heading("首次使用? 请填写模组文件夹路径和smapi路径, 默认如下:");
+                ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
+                ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley/StardewModdingAPI.exe");
+
                 ui.horizontal(|ui| {
                     ui.vertical(|ui|{
                         ui.horizontal(|ui| {

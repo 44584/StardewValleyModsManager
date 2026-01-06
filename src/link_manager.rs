@@ -46,12 +46,9 @@ impl LinkManager {
         profile_name: &str,
     ) -> std::io::Result<()> {
         //如果profile不存在对应目录, 则创建
-        if !self.link_parent_path.exists() {
-            std::fs::create_dir(&self.link_parent_path)?;
-        }
         let profile_path = self.link_parent_path.join(profile_name);
         if !profile_path.exists() {
-            std::fs::create_dir(&profile_path)?;
+            std::fs::create_dir_all(&profile_path)?;
         }
 
         //接下来为参数数组中的每个模组创建目录链接
