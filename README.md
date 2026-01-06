@@ -64,20 +64,25 @@ cargo run
 首次使用请填写本地的 Mods 目录路径 和 SMAPI 路径, 然后点击保存.
 首次使用输入框会填写默认路径, 请核对后修改.
 
+![](./images_for_readme/step1.png)
+
 #### step two
 
 填写配置名和描述, 配置名不能为空;
 点击创建即可创建一个空配置.
+![](./images_for_readme/step2.png)
 
 #### step three
 
 在模组栏寻找需要的模组, 选中.
 然后选中配置,
 最后点击将模组加入配置.
+![](./images_for_readme/step3.png)
 
 #### step four
 
 点击启动, 稍等片刻, 即可游玩.
+![](./images_for_readme/step4.png)
 
 ## 说明
 
