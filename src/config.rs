@@ -5,6 +5,7 @@ use std::path::PathBuf;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppConfig {
     pub mods_folder_path: String,
+    pub smapi_path: String,
 }
 
 impl AppConfig {

@@ -1,7 +1,12 @@
 use StardewModsManager::ui::StardewModsManagerApp;
-
+use eframe::egui;
 fn main() -> eframe::Result<()> {
-    let options = eframe::NativeOptions::default();
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_fullscreen(false) // 启动时全屏
+            .with_maximized(true), // 确保不是最大化而是真正的全屏
+        ..Default::default()
+    };
     eframe::run_native(
         "Stardew Mods Manager",
         options,

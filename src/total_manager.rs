@@ -21,6 +21,11 @@ impl Manager {
     pub fn set_scanner_mods_path(&mut self, mods_path: PathBuf) {
         self.scanner.set_mods_path(mods_path);
     }
+
+    /// 允许设置SMAPI位置
+    pub fn set_smapi_path(&mut self, smapi_path: PathBuf) {
+        self.link_manager.link_parent_path = smapi_path;
+    }
 }
 
 impl Manager {
@@ -48,10 +53,19 @@ impl Manager {
             ModScanner::default()
         };
 
+        // 如果配置文件存在, 说明已经配置SMAPI目录;
+        // 否则为首次使用, 用户可以输入SMAPI目录
+        let mut smapi_path = PathBuf::from(
+            "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/StardewModdingAPI.exe",
+        );
+        if config_path.exists() {
+            if let Some(cfg) = crate::config::AppConfig::load_from_file(&config_path) {
+                smapi_path = PathBuf::from(cfg.smapi_path.clone());
+            }
+        }
+
         Manager {
-            smapi_path: PathBuf::from(
-                "C:/Program Files (x86)/Steam/steamapps/common/Stardew Valley/StardewModdingAPI.exe",
-            ),
+            smapi_path,
             scanner,
             database_manager: ModManagerDb::new(db_path).unwrap(),
             link_manager: LinkManager::default(),

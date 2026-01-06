@@ -9,9 +9,10 @@ pub struct StardewModsManagerApp {
     new_profile_name: String,
     new_profile_desc: String,
     scanned: bool,
-    // 支持用户自定义模组文件夹目录
+    // 支持自定义模组文件夹目录和smapi路径
     mods_folder_input: String,
-    show_mods_folder_setting: bool,
+    smapi_path_input: String,
+    is_beginner: bool,
 }
 
 impl StardewModsManagerApp {
@@ -22,7 +23,7 @@ impl StardewModsManagerApp {
             .unwrap_or_else(|| std::env::current_dir().unwrap())
             .join("StardewModsManager");
         let config_path = data_dir.join("setting.toml");
-        let show_mods_folder_setting = !config_path.exists();
+        let is_beginner = !config_path.exists();
         Self {
             manager,
             selected_profile: None,
@@ -31,7 +32,8 @@ impl StardewModsManagerApp {
             new_profile_desc: String::new(),
             scanned: true,
             mods_folder_input: String::new(),
-            show_mods_folder_setting,
+            smapi_path_input: String::new(),
+            is_beginner,
         }
     }
 
@@ -104,12 +106,24 @@ impl eframe::App for StardewModsManagerApp {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            if self.show_mods_folder_setting {
-                ui.heading("首次使用? 请填写模组文件夹路径, 默认: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
+            if self.is_beginner {
+                ui.heading("首次使用? 请填写模组文件夹路径和smapi路径");
+                self.mods_folder_input = String::from(
+                    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods",
+                );
+                self.smapi_path_input = String::from("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley/StardewModdingAPI.exe");
                 ui.horizontal(|ui| {
-                    ui.label("Mods 文件夹路径:");
-                    ui.text_edit_singleline(&mut self.mods_folder_input);
-                    if ui.button("保存").clicked() {
+                    ui.vertical(|ui|{
+                        ui.horizontal(|ui| {
+                            ui.label("Mods 文件夹路径:");
+                            ui.add(egui::TextEdit::singleline(&mut self.mods_folder_input).desired_width(1000.0));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("SMAPI路径:");
+                            ui.add(egui::TextEdit::singleline(&mut self.smapi_path_input).desired_width(1000.0));
+                        });
+
+                        if ui.button("保存").clicked() {
                         if !self.mods_folder_input.trim().is_empty() {
                             let data_dir = dirs::data_dir()
                                 .unwrap_or_else(|| std::env::current_dir().unwrap())
@@ -117,6 +131,7 @@ impl eframe::App for StardewModsManagerApp {
                             let config_path = data_dir.join("setting.toml");
                             let cfg = crate::config::AppConfig {
                                 mods_folder_path: self.mods_folder_input.clone(),
+                                smapi_path: self.smapi_path_input.clone(),
                             };
                             if let Err(e) = cfg.save_to_file(&config_path) {
                                 ui.label(format!("保存失败: {}", e));
@@ -125,11 +140,15 @@ impl eframe::App for StardewModsManagerApp {
                                 self.manager.set_scanner_mods_path(std::path::PathBuf::from(
                                     &self.mods_folder_input,
                                 ));
-                                self.show_mods_folder_setting = false;
+                                self.is_beginner = false;
                                 self.manager.register_all_mods();
                             }
                         }
                     }
+                    }
+                    );
+                   
+                    
                 });
                 ui.separator();
             }
@@ -137,7 +156,7 @@ impl eframe::App for StardewModsManagerApp {
             // 查看已注册的模组并多选
             ui.label("所有模组");
             // 只有填写并保存路径后才显示扫描按钮
-            if !self.show_mods_folder_setting {
+            if !self.is_beginner {
                 if ui.button("扫描模组").clicked() {
                     self.manager.register_all_mods();
                     self.selected_mods.clear();
@@ -164,7 +183,10 @@ impl eframe::App for StardewModsManagerApp {
                     }
                 });
             if let Some(profile_name) = &self.selected_profile {
-                let button_content = format!("选中的模组添加到{}", self.selected_profile.as_ref().unwrap());
+                let button_content = format!(
+                    "选中的模组添加到{}",
+                    self.selected_profile.as_ref().unwrap()
+                );
                 if ui.button(button_content).clicked() {
                     let all_mods = self.manager.get_registered_mods();
                     let to_add: Vec<_> = all_mods
@@ -187,18 +209,18 @@ impl eframe::App for StardewModsManagerApp {
                         self.selected_profile = Some(profile.name.clone());
                     }
                     if ui.button("删除配置").clicked() {
-                       match self.manager.remove_profile(&profile.name){
-                        Ok(n)=>{
-                            if n==0{
-                                self.selected_mods.clear();
+                        match self.manager.remove_profile(&profile.name) {
+                            Ok(n) => {
+                                if n == 0 {
+                                    self.selected_mods.clear();
+                                }
+                            }
+                            Err(e) => {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("删除失败:{}", e));
+                                });
                             }
                         }
-                        Err(e) => {
-                            ui.horizontal(|ui| {
-                                ui.label(format!("删除失败:{}", e));
-                            });
-                        }
-                       }
                     }
                     ui.label(format!("信息: {}", profile.description));
                 });
