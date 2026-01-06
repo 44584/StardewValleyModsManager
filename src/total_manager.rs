@@ -59,7 +59,7 @@ impl Manager {
     }
 
     /// 本地所有的模组注册进入数据库
-    /// - 如果已存在, 不处理
+    /// - 如果模组已存在, 则更新模组信息
     pub fn register_all_mods(&self) {
         let all_mods = self.scanner.scan_mods();
         let all_mods: Vec<mods_manager::ModInfo> = all_mods.into_values().collect();
@@ -71,8 +71,7 @@ impl Manager {
     /// - `mod_unique_id` 模组的UniqueId
     pub fn remove_mod(&self, mod_unique_id: &str) {
         self.database_manager.remove_mod(mod_unique_id);
-        //Todo: 删除所有指向这个模组的链接目录
-        // 首先获取profiles文件夹下的所有profile_name
+        // 首先获取rofiles文件夹下的所有profile_name
         let profiles = &self.link_manager.link_parent_path;
         let profile_name_s: Vec<String> = fs::read_dir(profiles)
             .unwrap()

@@ -57,7 +57,7 @@ impl ModManagerDb {
         &self.conn
     }
 
-    /// 向数据库的mods表插入多个模组, 如果已存在, 不处理
+    /// 向数据库的mods表插入多个模组, 如果已存在, 则更新信息
     /// # 参数
     /// - `mods`:ModInfo的数组
     pub fn insert_mods(&self, mods: &Vec<ModInfo>) {
@@ -69,8 +69,17 @@ impl ModManagerDb {
             let description = mod_info.manifest_info.Description.clone();
             let mod_path = mod_info.path.to_str().unwrap_or("");
 
-            self.conn.execute("INSERT OR IGNORE INTO mods (unique_id, name, version, description, mod_path) VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![unique_id, name, version, description, mod_path]);
+            //如果unique_id这个UNIQUE属性冲突, 则更新
+            let _ = self.conn.execute(
+                "INSERT INTO mods (unique_id, name, version, description, mod_path) 
+                    VALUES (?1, ?2, ?3, ?4, ?5)
+                    ON CONFLICT(unique_id) DO UPDATE SET
+                        name = excluded.name,
+                        version = excluded.version,
+                        description = excluded.description,
+                        mod_path = excluded.mod_path",
+                rusqlite::params![unique_id, name, version, description, mod_path],
+            );
         }
     }
 
@@ -78,7 +87,7 @@ impl ModManagerDb {
     /// # 参数
     /// - `mod_unique_id`: 需要删除的模组的uinque_id
     pub fn remove_mod(&self, mod_unique_id: &str) {
-        self.conn.execute(
+        let _ = self.conn.execute(
             "DELETE FROM mods WHERE unique_id = ?1",
             rusqlite::params![mod_unique_id],
         );
@@ -311,8 +320,8 @@ mod tests {
         let db = ModManagerDb::new(test_db_path()).unwrap();
 
         // 1. 创建配置
-        db.create_profile("p1", "desc1");
-        db.create_profile("p2", "desc2");
+        db.create_profile("p1", "desc1")?;
+        db.create_profile("p2", "desc2")?;
         let profiles = db.get_profiles();
         assert_eq!(profiles.len(), 2);
         assert!(profiles.iter().any(|p| p.name == "p1"));

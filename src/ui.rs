@@ -17,7 +17,6 @@ pub struct StardewModsManagerApp {
 impl StardewModsManagerApp {
     pub fn new() -> Self {
         let manager = Manager::default();
-        manager.register_all_mods(); // 启动时扫描并注册模组
 
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| std::env::current_dir().unwrap())
@@ -106,7 +105,7 @@ impl eframe::App for StardewModsManagerApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.show_mods_folder_setting {
-                ui.heading("首次使用? 可设置模组文件夹路径, 例如: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
+                ui.heading("首次使用? 请填写模组文件夹路径, 默认: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
                 ui.horizontal(|ui| {
                     ui.label("Mods 文件夹路径:");
                     ui.text_edit_singleline(&mut self.mods_folder_input);
@@ -134,10 +133,16 @@ impl eframe::App for StardewModsManagerApp {
                 });
                 ui.separator();
             }
-            ui.heading("StardewModsManager");
             ui.separator();
             // 查看已注册的模组并多选
             ui.label("所有模组");
+            // 只有填写并保存路径后才显示扫描按钮
+            if !self.show_mods_folder_setting {
+                if ui.button("扫描模组").clicked() {
+                    self.manager.register_all_mods();
+                    self.selected_mods.clear();
+                }
+            }
             egui::ScrollArea::vertical()
                 .max_height(240.0)
                 .show(ui, |ui| {
