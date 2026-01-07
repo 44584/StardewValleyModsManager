@@ -4,8 +4,12 @@ use std::path::PathBuf;
 
 pub struct ModManagerDb {
     conn: Connection,
+    // 新增缓存, 优化性能
+    cached_mods: Option<Vec<ModInfo>>,
+    cached_profiles: Option<Vec<Profile>>,
 }
 
+/// Todo: 缓存要同步更新
 impl ModManagerDb {
     /// 打开或创建数据库连接
     /// # 参数
@@ -50,17 +54,43 @@ impl ModManagerDb {
             [],
         )?;
 
-        Ok(ModManagerDb { conn })
+        Ok(ModManagerDb {
+            conn,
+            cached_mods: None,
+            cached_profiles: None,
+        })
     }
 
     pub fn get_connection(&self) -> &Connection {
         &self.conn
     }
 
+    pub fn get_cached_mods(&self) -> &[ModInfo] {
+        self.cached_mods
+            .as_ref()
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
+    }
+
+    pub fn get_cached_profiles(&self) -> &[Profile] {
+        self.cached_profiles
+            .as_ref()
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
+    }
+
+    fn refresh_cached_mods(&mut self) {
+        self.cached_mods = self.get_mods().unwrap().into();
+    }
+
+    fn refresh_cached_profiles(&mut self) {
+        self.cached_profiles = self.get_profiles().into();
+    }
+
     /// 向数据库的mods表插入多个模组, 如果已存在, 则更新信息
     /// # 参数
     /// - `mods`:ModInfo的数组
-    pub fn insert_mods(&self, mods: &Vec<ModInfo>) {
+    pub fn insert_mods(&mut self, mods: &Vec<ModInfo>) {
         // 用事务会出现借用, 拼接VALUES子句之后再试
         for mod_info in mods {
             let unique_id = mod_info.manifest_info.UniqueId.clone();
@@ -81,16 +111,22 @@ impl ModManagerDb {
                 rusqlite::params![unique_id, name, version, description, mod_path],
             );
         }
+
+        //刷新缓存
+        self.refresh_cached_mods();
     }
 
     /// 从数据库中的mods中删除单个模组, 同时会从所有配置中移除该模组
     /// # 参数
     /// - `mod_unique_id`: 需要删除的模组的uinque_id
-    pub fn remove_mod(&self, mod_unique_id: &str) {
+    pub fn remove_mod(&mut self, mod_unique_id: &str) {
         let _ = self.conn.execute(
             "DELETE FROM mods WHERE unique_id = ?1",
             rusqlite::params![mod_unique_id],
         );
+
+        //刷新缓存
+        self.refresh_cached_mods();
     }
 
     /// 查询所有模组
@@ -137,11 +173,19 @@ impl ModManagerDb {
     /// # 参数
     /// - `name`: 配置名
     /// - `description`: 配置描述
-    pub fn create_profile(&self, name: &str, description: &str) -> Result<usize, rusqlite::Error> {
+    pub fn create_profile(
+        &mut self,
+        name: &str,
+        description: &str,
+    ) -> Result<usize, rusqlite::Error> {
         let ans = self.conn.execute(
             "INSERT OR IGNORE INTO profiles (name, description) VALUES (?1, ?2)",
             rusqlite::params![name, description],
         )?;
+
+        //刷新缓存
+        self.refresh_cached_profiles();
+
         Ok(ans)
     }
 
@@ -150,11 +194,14 @@ impl ModManagerDb {
     /// - `name`: 配置名
     /// # 返回值
     /// 剩余的配置数
-    pub fn remove_profile(&self, name: &str) -> Result<u16, rusqlite::Error> {
+    pub fn remove_profile(&mut self, name: &str) -> Result<u16, rusqlite::Error> {
         let _ = self.conn.execute(
             "DELETE FROM profiles WHERE name = ?1",
             rusqlite::params![name],
         );
+
+        //刷新缓存
+        self.refresh_cached_profiles();
 
         self.conn.query_row(
             "SELECT COUNT(*) FROM profiles",
@@ -325,7 +372,7 @@ mod tests {
     #[test]
     fn test_full_mods_manager_flow() -> Result<()> {
         clean_db();
-        let db = ModManagerDb::new(test_db_path()).unwrap();
+        let mut db = ModManagerDb::new(test_db_path()).unwrap();
 
         // 1. 创建配置
         db.create_profile("p1", "desc1")?;

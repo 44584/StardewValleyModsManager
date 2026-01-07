@@ -18,8 +18,6 @@ fn test_manager_integration_flow() {
     manager.set_scanner_mods_path(mods_dir);
 
     manager.register_all_mods();
-    let all_mods = manager.get_registered_mods();
-    assert!(all_mods.len() == 3, "应有3个模组被注册");
 
     let profile_name = "test_profile";
     let description = "测试用配置";
@@ -27,9 +25,12 @@ fn test_manager_integration_flow() {
     let profiles = manager.get_all_profiles();
     assert!(profiles.iter().any(|p| p.name == profile_name));
 
+    let all_mods = manager.get_registered_mods();
+    assert!(all_mods.len() == 3, "应有3个模组被注册");
+
     // 选中部分模组加入 profile
     let selected_mods: Vec<ModInfo> = all_mods
-        .clone()
+        .to_vec()
         .into_iter()
         .filter(|m| {
             m.manifest_info.Name == "Console Commands" || m.manifest_info.Name == "GoBackHome"

@@ -1,3 +1,5 @@
+use crate::mods_manager::ManifestInfo;
+use crate::mods_manager::ModInfo;
 use crate::total_manager::Manager;
 use eframe::egui;
 use std::path::PathBuf;
@@ -148,6 +150,7 @@ impl StardewModsManagerApp {
 
     /// - mods列表 组件
     /// - 提供选中功能
+    /// Todo: 删除操作后续改为先收集删除名单, 再统一删除
     fn ui_mods_list(&mut self, ui: &mut egui::Ui) {
         ui.label("所有模组");
         // 只有填写并保存路径后才显示扫描按钮
@@ -182,24 +185,24 @@ impl StardewModsManagerApp {
                 "选中的模组添加到{}",
                 self.selected_profile.as_ref().unwrap()
             );
-            if ui.button(button_content).highlight().clicked() {
-                let all_mods = self.manager.get_registered_mods();
-                let to_add: Vec<_> = all_mods
-                    .into_iter()
-                    .filter(|m| self.selected_mods.contains(&m.manifest_info.UniqueId))
-                    .collect();
-                self.manager.insert_mods_to_profile(to_add, profile_name);
-                // 然后清空选中的模组
-                self.selected_mods.clear();
-            }
+            // if ui.button(button_content).highlight().clicked() {
+            //     let all_mods = self.manager.get_registered_mods();
+            //     let to_add: Vec<_> = all_mods
+            //         .into_iter()
+            //         .filter(|m| self.selected_mods.contains(&m.manifest_info.UniqueId))
+            //         .collect();
+            //     self.manager.insert_mods_to_profile(to_add, profile_name);
+            //     // 然后清空选中的模组
+            //     self.selected_mods.clear();
+            // }
         }
     }
 
     /// profile列表 组件
+    /// Todo: 删除操作后续改为先收集删除名单, 再统一删除
     fn ui_profile_list(&mut self, ui: &mut egui::Ui) {
         ui.label("所有配置");
-        let profiles = self.manager.get_all_profiles();
-        for profile in &profiles {
+        for profile in self.manager.get_all_profiles() {
             ui.horizontal(|ui| {
                 let selected = self.selected_profile.as_deref() == Some(&profile.name);
                 if ui
@@ -209,20 +212,20 @@ impl StardewModsManagerApp {
                 {
                     self.selected_profile = Some(profile.name.clone());
                 }
-                if ui.button("删除配置").highlight().clicked() {
-                    match self.manager.remove_profile(&profile.name) {
-                        Ok(n) => {
-                            if n == 0 {
-                                self.selected_mods.clear();
-                            }
-                        }
-                        Err(e) => {
-                            ui.horizontal(|ui| {
-                                ui.label(format!("删除失败:{}", e));
-                            });
-                        }
-                    }
-                }
+                // if ui.button("删除配置").highlight().clicked() {
+                //     match self.manager.remove_profile(&profile.name) {
+                //         Ok(n) => {
+                //             if n == 0 {
+                //                 self.selected_mods.clear();
+                //             }
+                //         }
+                //         Err(e) => {
+                //             ui.horizontal(|ui| {
+                //                 ui.label(format!("删除失败:{}", e));
+                //             });
+                //         }
+                //     }
+                // }
                 ui.label(format!("信息: {}", profile.description));
             });
         }

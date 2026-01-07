@@ -84,7 +84,7 @@ impl Manager {
 
     /// 本地所有的模组注册进入数据库
     /// - 如果模组已存在, 则更新模组信息
-    pub fn register_all_mods(&self) {
+    pub fn register_all_mods(&mut self) {
         let all_mods = self.scanner.scan_mods();
         let all_mods: Vec<mods_manager::ModInfo> = all_mods.into_values().collect();
         self.database_manager.insert_mods(&all_mods);
@@ -95,7 +95,7 @@ impl Manager {
     /// - `mod_unique_id` 模组的UniqueId
     ///
     /// Todo: 该函数的移除链接应该交给底层实现
-    pub fn remove_mod(&self, mod_unique_id: &str) {
+    pub fn remove_mod(&mut self, mod_unique_id: &str) {
         self.database_manager.remove_mod(mod_unique_id);
         // 首先获取rofiles文件夹下的所有profile_name
         let profiles = &self.link_manager.link_parent_path;
@@ -114,15 +114,15 @@ impl Manager {
     }
 
     /// 返回所有模组的信息
-    pub fn get_registered_mods(&self) -> Vec<mods_manager::ModInfo> {
-        self.database_manager.get_mods().unwrap()
+    pub fn get_registered_mods(&self) -> &[mods_manager::ModInfo] {
+        self.database_manager.get_cached_mods()
     }
 
     /// 创建一个空的profile
     /// # 参数
     /// - `name`: 配置名
     /// - `description`: 配置描述
-    pub fn create_empty_profile(&self, name: &str, description: &str) {
+    pub fn create_empty_profile(&mut self, name: &str, description: &str) {
         let result = self.database_manager.create_profile(name, description);
         match result {
             Ok(o) => eprintln!("OK"),
@@ -135,15 +135,15 @@ impl Manager {
     /// 删除一个配置
     /// # 参数
     /// - `name`: 配置名
-    pub fn remove_profile(&self, name: &str) -> Result<u16, rusqlite::Error> {
+    pub fn remove_profile(&mut self, name: &str) -> Result<u16, rusqlite::Error> {
         let num_profiles = self.database_manager.remove_profile(name);
         self.link_manager.remove_profile(name).unwrap();
         num_profiles
     }
 
     /// 返回所有的profile
-    pub fn get_all_profiles(&self) -> Vec<mods_manager::Profile> {
-        self.database_manager.get_profiles()
+    pub fn get_all_profiles(&self) -> &[mods_manager::Profile] {
+        self.database_manager.get_cached_profiles()
     }
 
     /// 返回一个profile中启用的mod
