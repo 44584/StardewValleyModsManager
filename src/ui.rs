@@ -8,11 +8,12 @@ pub struct StardewModsManagerApp {
     // Profile创建输入
     new_profile_name: String,
     new_profile_desc: String,
-    scanned: bool,
     // 支持自定义模组文件夹目录和smapi路径
     mods_folder_input: String,
     smapi_path_input: String,
     is_beginner: bool,
+    // 确认对话框状态
+    show_reset_confirmation: bool,
 }
 
 impl StardewModsManagerApp {
@@ -30,10 +31,10 @@ impl StardewModsManagerApp {
             selected_mods: Default::default(),
             new_profile_name: String::new(),
             new_profile_desc: String::new(),
-            scanned: true,
             mods_folder_input: String::new(),
             smapi_path_input: String::new(),
             is_beginner,
+            show_reset_confirmation: false,
         }
     }
 
@@ -107,9 +108,9 @@ impl eframe::App for StardewModsManagerApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.is_beginner {
-                ui.heading("首次使用? 请填写模组文件夹路径和smapi路径, 默认如下:");
+                ui.heading("首次使用?请填写模组文件夹路径和smapi路径, 默认如下:");
                 ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
-                ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley/StardewModdingAPI.exe");
+                ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\StardewModdingAPI.exe");
 
                 ui.horizontal(|ui| {
                     ui.vertical(|ui|{
@@ -117,39 +118,65 @@ impl eframe::App for StardewModsManagerApp {
                             ui.label("Mods 文件夹路径:");
                             ui.add(egui::TextEdit::singleline(&mut self.mods_folder_input).desired_width(1000.0));
                         });
+
                         ui.horizontal(|ui| {
                             ui.label("SMAPI路径:");
                             ui.add(egui::TextEdit::singleline(&mut self.smapi_path_input).desired_width(1000.0));
                         });
 
                         if ui.button("保存").clicked() {
-                        if !self.mods_folder_input.trim().is_empty() {
-                            let data_dir = dirs::data_dir()
-                                .unwrap_or_else(|| std::env::current_dir().unwrap())
-                                .join("StardewModsManager");
-                            let config_path = data_dir.join("setting.toml");
-                            let cfg = crate::config::AppConfig {
-                                mods_folder_path: self.mods_folder_input.clone(),
-                                smapi_path: self.smapi_path_input.clone(),
-                            };
-                            if let Err(e) = cfg.save_to_file(&config_path) {
-                                ui.label(format!("保存失败: {}", e));
-                            } else {
-                                // 设置scanner路径并隐藏设置界面
-                                self.manager.set_scanner_mods_path(std::path::PathBuf::from(
-                                    &self.mods_folder_input,
-                                ));
-                                self.is_beginner = false;
-                                self.manager.register_all_mods();
+                            if (!self.mods_folder_input.trim().is_empty())
+                                && (!self.smapi_path_input.trim().is_empty())
+                                && (self.smapi_path_input.trim().ends_with("exe")) {
+                                let data_dir = dirs::data_dir()
+                                    .unwrap_or_else(|| std::env::current_dir().unwrap())
+                                    .join("StardewModsManager");
+                                let config_path = data_dir.join("setting.toml");
+                                let cfg = crate::config::AppConfig {
+                                    mods_folder_path: self.mods_folder_input.clone(),
+                                    smapi_path: self.smapi_path_input.clone(),
+                                };
+                                if let Err(e) = cfg.save_to_file(&config_path) {
+                                    ui.label(format!("保存失败: {}", e));
+                                } else {
+                                    // 设置scanner路径并隐藏设置界面
+                                    self.manager.set_scanner_mods_path(std::path::PathBuf::from(
+                                        &self.mods_folder_input,
+                                    ));
+                                    self.is_beginner = false;
+                                    self.manager.register_all_mods();
+                                }
                             }
                         }
-                    }
-                    }
-                    );
-                   
-                    
+                    });
                 });
-                ui.separator();
+            }else{//不是beginner可以通过重置成为beginner, 然后修改配置
+                if ui.button("RESET").clicked(){
+                    self.show_reset_confirmation = true;
+                }
+            }
+            // 显示确认对话框
+            if self.show_reset_confirmation {
+                egui::Window::new("确认重置")
+                    .collapsible(false)
+                    .resizable(false)
+                    .show(ctx, |ui| {
+                        ui.label("警告:此操作将重置配置中的SMAPI路径和m
+                        Mods路径!");
+                        ui.label("确定要继续吗？");
+                        
+                        ui.horizontal(|ui| {
+                            if ui.button("取消").clicked() {
+                                self.show_reset_confirmation = false;
+                            }
+                            if ui.button("确认重置").clicked() {
+                                // 执行真正的重置操作
+                                self.manager.reset();
+                                self.is_beginner = true;
+                                self.show_reset_confirmation = false;
+                            }
+                        });
+                    });
             }
             ui.separator();
             // 查看已注册的模组并多选

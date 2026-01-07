@@ -17,7 +17,7 @@ pub struct Manager {
 }
 
 impl Manager {
-    /// 允许在测试时设置scanner的mods路径
+    /// 允许设置scanner的mods路径
     pub fn set_scanner_mods_path(&mut self, mods_path: PathBuf) {
         self.scanner.set_mods_path(mods_path);
     }
@@ -25,6 +25,16 @@ impl Manager {
     /// 允许设置SMAPI位置
     pub fn set_smapi_path(&mut self, smapi_path: PathBuf) {
         self.link_manager.link_parent_path = smapi_path;
+    }
+
+    /// 支持重置, 然后重新输入SMAPI与mods的路径
+    pub fn reset(&self) {
+        let setting_path = dirs::data_dir()
+            .unwrap_or_else(|| std::env::current_dir().unwrap())
+            .join("StardewModsManager")
+            .join("setting.toml");
+
+        fs::remove_file(setting_path);
     }
 }
 
