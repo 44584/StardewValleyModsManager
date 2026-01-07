@@ -13,7 +13,7 @@ fn main() -> eframe::Result<()> {
         Box::new(|cc| {
             // 在创建应用之前设置字体
             StardewModsManagerApp::add_chinese_font(&cc.egui_ctx);
-            Ok(Box::new(StardewModsManagerApp::new()))
+            Ok(Box::new(StardewModsManagerApp::new(cc)))
         }),
     )
 }

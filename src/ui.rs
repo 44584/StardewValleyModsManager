@@ -17,14 +17,27 @@ pub struct StardewModsManagerApp {
 }
 
 impl StardewModsManagerApp {
-    pub fn new() -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {    
+        //设置字体
+        Self::add_chinese_font(&cc.egui_ctx);
+        //设置全局文本样式
+        cc.egui_ctx.style_mut(|style| {
+            style.text_styles = [
+                (egui::TextStyle::Heading, egui::FontId::new(20.0, egui::FontFamily::Proportional)),
+                (egui::TextStyle::Body, egui::FontId::new(18.0, egui::FontFamily::Proportional)),
+                (egui::TextStyle::Button, egui::FontId::new(18.0, egui::FontFamily::Proportional)),
+            ]
+            .into();
+        });
+        
         let manager = Manager::default();
-
+    
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| std::env::current_dir().unwrap())
             .join("StardewModsManager");
         let config_path = data_dir.join("setting.toml");
         let is_beginner = !config_path.exists();
+
         Self {
             manager,
             selected_profile: None,
@@ -40,7 +53,7 @@ impl StardewModsManagerApp {
 
     /// 添加中文字体到 egui
     pub fn add_chinese_font(ctx: &egui::Context) {
-        use egui::{FontDefinitions, FontFamily, FontId, TextStyle};
+        use egui::{FontDefinitions, FontFamily};
 
         let mut fonts = FontDefinitions::default();
 
@@ -71,33 +84,6 @@ impl StardewModsManagerApp {
 
 impl eframe::App for StardewModsManagerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        use egui::FontFamily;
-        let mut style = (*ctx.style()).clone();
-        style.text_styles = [
-            (
-                egui::TextStyle::Heading,
-                egui::FontId::new(20.0, FontFamily::Proportional),
-            ),
-            (
-                egui::TextStyle::Body,
-                egui::FontId::new(18.0, FontFamily::Proportional),
-            ),
-            (
-                egui::TextStyle::Monospace,
-                egui::FontId::new(16.0, FontFamily::Monospace),
-            ),
-            (
-                egui::TextStyle::Button,
-                egui::FontId::new(18.0, FontFamily::Proportional),
-            ),
-            (
-                egui::TextStyle::Small,
-                egui::FontId::new(14.0, FontFamily::Proportional),
-            ),
-        ]
-        .into();
-        ctx.set_style(style);
-
         // 默认选中第一个profile
         if self.selected_profile.is_none() {
             let profiles = self.manager.get_all_profiles();

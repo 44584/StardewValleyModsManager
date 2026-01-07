@@ -93,6 +93,8 @@ impl Manager {
     /// 移除一个模组, 实际上这个模组文件夹不被删除, 但是指向它的链接需要删除
     /// # 参数
     /// - `mod_unique_id` 模组的UniqueId
+    ///
+    /// Todo: 该函数的移除链接应该交给底层实现
     pub fn remove_mod(&self, mod_unique_id: &str) {
         self.database_manager.remove_mod(mod_unique_id);
         // 首先获取rofiles文件夹下的所有profile_name
