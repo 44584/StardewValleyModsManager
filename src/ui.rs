@@ -3,6 +3,7 @@ use crate::mods_manager::ModInfo;
 use crate::total_manager::Manager;
 use eframe::egui;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 pub struct StardewModsManagerApp {
     manager: Manager,
@@ -22,27 +23,6 @@ pub struct StardewModsManagerApp {
 
 impl StardewModsManagerApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        //设置字体
-        Self::add_chinese_font(&cc.egui_ctx);
-        //设置全局文本样式
-        cc.egui_ctx.style_mut(|style| {
-            style.text_styles = [
-                (
-                    egui::TextStyle::Heading,
-                    egui::FontId::new(20.0, egui::FontFamily::Proportional),
-                ),
-                (
-                    egui::TextStyle::Body,
-                    egui::FontId::new(18.0, egui::FontFamily::Proportional),
-                ),
-                (
-                    egui::TextStyle::Button,
-                    egui::FontId::new(18.0, egui::FontFamily::Proportional),
-                ),
-            ]
-            .into();
-        });
-
         let manager = Manager::default();
 
         let data_dir = dirs::data_dir()
@@ -71,26 +51,42 @@ impl StardewModsManagerApp {
 
         let mut fonts = FontDefinitions::default();
 
-        // 加载自定义中文字体
-        use std::sync::Arc;
-        fonts.font_data.insert(
-            "my_chinese_font".to_owned(),
-            Arc::new(egui::FontData::from_static(include_bytes!(
-                "../assets/fonts/NotoSansSC-Regular.ttf"
-            ))),
-        );
+        // 优先尝试使用系统字体
+        #[cfg(target_os = "windows")]
+        let system_fonts = vec!["Microsoft YaHei", "SimHei", "SimSun"];
+        #[cfg(target_os = "macos")]
+        let system_fonts = vec!["PingFang SC", "Heiti SC", "STHeiti"];
+        #[cfg(target_os = "linux")]
+        let system_fonts = vec!["WenQuanYi Micro Hei", "Noto Sans CJK SC"];
 
-        // 将自定义字体添加到比例字体和等宽字体的字体族中
-        fonts
-            .families
-            .entry(FontFamily::Proportional)
-            .or_default()
-            .insert(0, "my_chinese_font".to_owned());
-        fonts
-            .families
-            .entry(FontFamily::Monospace)
-            .or_default()
-            .push("my_chinese_font".to_owned());
+        // 检查系统字体是否可用
+        let mut found_system_font = false;
+        for font_name in system_fonts {
+            if fonts
+                .families
+                .get(&FontFamily::Proportional)
+                .map_or(false, |fonts| fonts.contains(&font_name.to_string()))
+            {
+                found_system_font = true;
+                break;
+            }
+        }
+
+        // 只有在系统字体不可用时才加载自定义字体
+        if !found_system_font {
+            fonts.font_data.insert(
+                "my_chinese_font".to_owned(),
+                Arc::new(egui::FontData::from_static(include_bytes!(
+                    "../assets/fonts/NotoSansSC-Regular.ttf"
+                ))),
+            );
+
+            fonts
+                .families
+                .entry(FontFamily::Proportional)
+                .or_default()
+                .insert(0, "my_chinese_font".to_owned());
+        }
 
         ctx.set_fonts(fonts);
     }
@@ -152,7 +148,7 @@ impl StardewModsManagerApp {
     /// - 提供选中功能
     /// Todo: 删除操作后续改为先收集删除名单, 再统一删除
     fn ui_mods_list(&mut self, ui: &mut egui::Ui) {
-        ui.label("所有模组");
+        ui.heading("所有模组");
         // 只有填写并保存路径后才显示扫描按钮
         if !self.is_beginner {
             if ui.button("扫描模组").highlight().clicked() {
@@ -185,23 +181,26 @@ impl StardewModsManagerApp {
                 "选中的模组添加到{}",
                 self.selected_profile.as_ref().unwrap()
             );
-            // if ui.button(button_content).highlight().clicked() {
-            //     let all_mods = self.manager.get_registered_mods();
-            //     let to_add: Vec<_> = all_mods
-            //         .into_iter()
-            //         .filter(|m| self.selected_mods.contains(&m.manifest_info.UniqueId))
-            //         .collect();
-            //     self.manager.insert_mods_to_profile(to_add, profile_name);
-            //     // 然后清空选中的模组
-            //     self.selected_mods.clear();
-            // }
+            if ui.button(button_content).highlight().clicked() {
+                let all_mods = self.manager.get_registered_mods();
+                let to_add: Vec<_> = all_mods
+                    .iter()
+                    .filter(|m| self.selected_mods.contains(&m.manifest_info.UniqueId))
+                    .cloned()
+                    .collect();
+                self.manager.insert_mods_to_profile(to_add, profile_name);
+                // 然后清空选中的模组
+                self.selected_mods.clear();
+            }
         }
     }
 
     /// profile列表 组件
     /// Todo: 删除操作后续改为先收集删除名单, 再统一删除
     fn ui_profile_list(&mut self, ui: &mut egui::Ui) {
-        ui.label("所有配置");
+        ui.heading("所有配置");
+
+        let mut profiles_to_delete = Vec::new();
         for profile in self.manager.get_all_profiles() {
             ui.horizontal(|ui| {
                 let selected = self.selected_profile.as_deref() == Some(&profile.name);
@@ -212,22 +211,25 @@ impl StardewModsManagerApp {
                 {
                     self.selected_profile = Some(profile.name.clone());
                 }
-                // if ui.button("删除配置").highlight().clicked() {
-                //     match self.manager.remove_profile(&profile.name) {
-                //         Ok(n) => {
-                //             if n == 0 {
-                //                 self.selected_mods.clear();
-                //             }
-                //         }
-                //         Err(e) => {
-                //             ui.horizontal(|ui| {
-                //                 ui.label(format!("删除失败:{}", e));
-                //             });
-                //         }
-                //     }
-                // }
+                if ui.button("删除配置").highlight().clicked() {
+                    profiles_to_delete.push(profile.name.clone());
+                }
                 ui.label(format!("信息: {}", profile.description));
             });
+        }
+
+        for profile_name in profiles_to_delete {
+            match self.manager.remove_profile(&profile_name) {
+                Ok(n) => {
+                    if n == 0 {
+                        self.selected_profile = None;
+                        self.selected_mods.clear();
+                    }
+                }
+                Err(e) => {
+                    eprintln!("删除失败: {}", e);
+                }
+            }
         }
     }
 

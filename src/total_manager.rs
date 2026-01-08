@@ -135,6 +135,8 @@ impl Manager {
     /// 删除一个配置
     /// # 参数
     /// - `name`: 配置名
+    /// # 返回值
+    /// 剩余的profile数量
     pub fn remove_profile(&mut self, name: &str) -> Result<u16, rusqlite::Error> {
         let num_profiles = self.database_manager.remove_profile(name);
         self.link_manager.remove_profile(name).unwrap();
@@ -169,8 +171,15 @@ impl Manager {
         self.database_manager
             .remove_mod_from_profile(profile_name, mod_info.clone());
         let mod_name = mod_info.manifest_info.Name.clone();
-        self.link_manager
-            .remove_mod_from_profile(profile_name, &mod_name);
+        match self
+            .link_manager
+            .remove_mod_from_profile(profile_name, &mod_name)
+        {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("{}", e)
+            }
+        }
     }
 
     pub fn launch_stardew_valley(&self, profile_name: &str) {
