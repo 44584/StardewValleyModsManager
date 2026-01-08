@@ -95,23 +95,7 @@ impl Manager {
     /// - `mod_unique_id` 模组的UniqueId
     ///
     /// Todo: 该函数的移除链接应该交给底层实现
-    pub fn remove_mod(&mut self, mod_unique_id: &str) {
-        self.database_manager.remove_mod(mod_unique_id);
-        // 首先获取rofiles文件夹下的所有profile_name
-        let profiles = &self.link_manager.link_parent_path;
-        let profile_name_s: Vec<String> = fs::read_dir(profiles)
-            .unwrap()
-            .filter_map(|entry| entry.ok()) // 过滤掉错误条目，保留Ok值
-            .filter(|entry| entry.file_type().unwrap().is_dir()) // 过滤出目录类型的条目
-            .map(|entry| entry.file_name().to_string_lossy().into_owned()) // 映射为目录名称字符串
-            .collect();
-
-        // 再获取模组名(要绝对可靠, 所以统一使用数据库)
-        let mod_name = &self.database_manager.get_modname_by_uniqueid(mod_unique_id);
-        for pn in &profile_name_s {
-            self.link_manager.remove_mod_from_profile(pn, mod_name);
-        }
-    }
+    pub fn remove_mod(&mut self, mod_unique_id: &str) {}
 
     /// 返回所有模组的信息
     pub fn get_registered_mods(&self) -> &[mods_manager::ModInfo] {
@@ -170,10 +154,10 @@ impl Manager {
     pub fn remove_mod_from_profile(&self, mod_info: mods_manager::ModInfo, profile_name: &str) {
         self.database_manager
             .remove_mod_from_profile(profile_name, mod_info.clone());
-        let mod_name = mod_info.manifest_info.Name.clone();
+        let mod_path = mod_info.path.clone();
         match self
             .link_manager
-            .remove_mod_from_profile(profile_name, &mod_name)
+            .remove_mod_from_profile(profile_name, mod_path)
         {
             Ok(_) => {}
             Err(e) => {

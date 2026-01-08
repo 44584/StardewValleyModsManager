@@ -19,6 +19,7 @@ pub struct ModInfo {
     pub path: PathBuf,
 }
 
+//Todo: 添加路径属性
 pub struct Profile {
     pub name: String,
     pub description: String,

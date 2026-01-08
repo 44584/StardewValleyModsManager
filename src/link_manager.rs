@@ -52,9 +52,10 @@ impl LinkManager {
         }
 
         //接下来为参数数组中的每个模组创建目录链接
+        // bug8c0096a 这里使用模组文件夹名作为链接文件夹名
         for odp in mod_path_vec {
-            let mod_name = odp.file_name().unwrap().to_str().unwrap();
-            let _ = self.create_link(odp, &profile_path.join(mod_name));
+            let mod_folder_name = odp.file_name().unwrap().to_str().unwrap();
+            let _ = self.create_link(odp, &profile_path.join(mod_folder_name));
         }
         Ok(())
     }
@@ -71,15 +72,24 @@ impl LinkManager {
     /// 从配置中移除mod对应的目录链接
     /// # 参数
     /// - `profile_name`: profile名, 与self.link_parent_path拼接成完整路径
-    /// - `mod_name`: 模组名
+    /// - `mod_path`: 模组路径
+    /// bug8c0096a 这里使用模组名(与模组文件夹名不同)拼接出 profile下链接文件夹路径
     pub fn remove_mod_from_profile(
         &self,
         profile_name: &str,
-        mod_name: &str,
+        mod_path: PathBuf,
     ) -> Result<(), String> {
-        match std::fs::remove_dir_all(self.link_parent_path.join(profile_name).join(mod_name)) {
+        let mod_folder_name = mod_path.file_name().unwrap().to_str().unwrap();
+        let mod_link_path = self
+            .link_parent_path
+            .join(profile_name)
+            .join(mod_folder_name);
+        match std::fs::remove_dir_all(mod_link_path) {
             Ok(_) => {
-                eprintln!("link_manager: {} removed.", mod_name);
+                eprintln!(
+                    "link_manager: link{:?} -> {:?} removed.",
+                    mod_folder_name, mod_path
+                );
                 Ok(())
             }
             Err(e) => Err(e.to_string()),
