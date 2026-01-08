@@ -93,8 +93,8 @@ impl StardewModsManagerApp {
 
     fn ui_beginner_setting(&mut self, ui: &mut egui::Ui) {
         ui.heading("首次使用?请填写模组文件夹路径和smapi路径, 格式默认如下:");
-        ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
-        ui.heading("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\StardewModdingAPI.exe");
+        ui.label("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\Mods");
+        ui.label("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Stardew Valley\\StardewModdingAPI.exe");
 
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
